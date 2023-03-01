@@ -1,2 +1,2 @@
 # Toontown Online US Phase Files
- US phase files for Toontown Online
+phase files for the US version of Toontown Online
