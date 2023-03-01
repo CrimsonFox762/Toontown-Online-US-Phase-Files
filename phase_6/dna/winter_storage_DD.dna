@@ -1,0 +1,3 @@
+hood_model "phase_6/models/props/winter_palm_tree_topflat" [
+	store_node [ "holiday_prop" "prop_palm_tree_topflat" ]
+	]

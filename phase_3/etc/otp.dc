@@ -1,0 +1,182 @@
+from direct.distributed import DistributedObject/AI
+from otp.ai import TimeManager/AI
+from direct.distributed import DistributedNode/AI
+from direct.distributed import DistributedSmoothNode/AI
+from otp.ai import MagicWordManager/AI
+from otp.avatar import DistributedAvatar/AI
+from otp.avatar import DistributedPlayer/AI
+from otp.distributed import DistributedPuppeteer/AI
+from otp.friends import FriendManager/AI
+from otp.guild import DistributedGuildManager/AI
+from otp.guild import DistributedGuild/AI
+from otp.distributed import DistributedDistrict/AI
+from otp.distributed import DistributedDirectory/AI
+
+struct AvatarPendingDel {
+  uint32 Avatar;
+  uint32 date;
+};
+
+dclass Account {
+  ACCOUNT_AV_SET(uint32array);
+  HOUSE_ID_SET(uint32array);
+  ESTATE_ID(uint32);
+  ACCOUNT_AV_SET_DEL(AvatarPendingDel []);
+};
+
+struct BarrierData {
+  uint16 context;
+  string name;
+  uint32 avIds[];
+};
+
+dclass DistributedObject {
+  setBarrierData(BarrierData []) broadcast ram;
+  setBarrierReady(uint16) p2p clsend;
+};
+
+dclass TimeManager : DistributedObject {
+  requestServerTime(uint8) p2p clsend;
+  serverTime(uint8, int32, uint32) p2p;
+  setDisconnectReason(uint8) p2p clsend;
+  setExceptionInfo(string) p2p clsend;
+};
+
+dclass ObjectServer {
+  setName(string) required p2p;
+  setDateCreated(uint32) p2p;
+};
+
+dclass DistributedDirectory : DistributedObject {
+  setParentingRules(string, string) broadcast ram;
+  setName(string) required broadcast ram;
+};
+
+dclass DistributedDistrict : DistributedObject {
+  setName(string) required broadcast;
+  setAvailable(uint8) required broadcast;
+};
+
+dclass DistributedGuildMembership : DistributedObject {
+  setGuilds(uint32 []) p2p;
+};
+
+dclass DistributedGuildManager : DistributedObject {
+  setName(string) required broadcast;
+  requestCreate(string) p2p clsend;
+  rejectCreate(uint8) p2p;
+};
+
+dclass DistributedGuildMember : DistributedObject {
+  setAvatar(uint32) required p2p;
+  setSince(uint32) p2p;
+  setReputations(uint32 []) p2p;
+  requestEndMembership() p2p clsend;
+};
+
+dclass DistributedGuild : DistributedObject {
+  setName(string) required p2p;
+  setOwnerAvatarId(uint32) required p2p;
+  setMemberListId(uint32) required p2p;
+  setMemberApplicationListId(uint32) required p2p;
+  setDateCreated(uint32) p2p;
+  setGuildStatus(int16) p2p;
+  setReputations(uint32 []) p2p;
+  requirementsForLevel(string) p2p;
+  join() p2p clsend;
+  invite(uint32) p2p clsend;
+  rejectJoin(uint32) p2p;
+};
+
+dclass DistributedNode : DistributedObject {
+  setParentStr(blob) broadcast ram ownsend airecv;
+  setParent(uint32) broadcast ram ownsend airecv;
+  setX(int16/10) broadcast ram ownsend airecv;
+  setY(int16/10) broadcast ram ownsend airecv;
+  setZ(int16/10) broadcast ram ownsend airecv;
+  setH(int16%360/10) broadcast ram ownsend airecv;
+  setP(int16%360/10) broadcast ram ownsend airecv;
+  setR(int16%360/10) broadcast ram ownsend airecv;
+  setPos : setX, setY, setZ;
+  setHpr : setH, setP, setR;
+  setPosHpr : setX, setY, setZ, setH, setP, setR;
+  setXY : setX, setY;
+  setXZ : setX, setZ;
+  setXYH : setX, setY, setH;
+  setXYZH : setX, setY, setZ, setH;
+};
+
+dclass DistributedSmoothNode : DistributedNode {
+  setComponentX(int16/10) broadcast ram clsend airecv;
+  setComponentY(int16/10) broadcast ram clsend airecv;
+  setComponentZ(int16/10) broadcast ram clsend airecv;
+  setComponentH(int16%360/10) broadcast ram clsend airecv;
+  setComponentP(int16%360/10) broadcast ram clsend airecv;
+  setComponentR(int16%360/10) broadcast ram clsend airecv;
+  setComponentT(int16) broadcast ram clsend airecv;
+  setSmStop : setComponentT;
+  setSmH : setComponentH, setComponentT;
+  setSmZ : setComponentZ, setComponentT;
+  setSmXY : setComponentX, setComponentY, setComponentT;
+  setSmXZ : setComponentX, setComponentZ, setComponentT;
+  setSmPos : setComponentX, setComponentY, setComponentZ, setComponentT;
+  setSmHpr : setComponentH, setComponentP, setComponentR, setComponentT;
+  setSmXYH : setComponentX, setComponentY, setComponentH, setComponentT;
+  setSmXYZH : setComponentX, setComponentY, setComponentZ, setComponentH, setComponentT;
+  setSmPosHpr : setComponentX, setComponentY, setComponentZ, setComponentH, setComponentP, setComponentR, setComponentT;
+  clearSmoothing(int8) broadcast clsend;
+  suggestResync(uint32, int16, int16, int32, uint16, uint16/100) p2p clsend;
+  returnResync(uint32, int16, int32, uint16, uint16/100) p2p clsend;
+};
+
+dclass DistributedAvatar : DistributedSmoothNode {
+  setName(string) required broadcast db;
+  friendsNotify(int32, int8) p2p clsend;
+};
+
+dclass DistributedPlayer : DistributedAvatar {
+  setAccountName(string) required p2p db;
+  setChat(string, uint8) broadcast ownsend;
+  setWhisperFrom(uint32, string) p2p clsend;
+  setWhisperSCFrom(uint32, uint16) p2p clsend;
+  setWhisperSCCustomFrom(uint32, uint16) p2p clsend;
+  setWhisperSCEmoteFrom(uint32, uint16) p2p clsend;
+  setWhisperIgnored(uint32) p2p clsend;
+  setSystemMessage(uint32, string) p2p;
+  setCommonChatFlags(uint8) broadcast p2p ram;
+  setSC(uint16) broadcast ownsend airecv;
+  setSCCustom(uint16) broadcast ownsend airecv;
+  setFriendsList(uint32uint8array) required p2p db airecv;
+  OwningAccount(uint32);
+  WishName(string);
+  WishNameState(string);
+};
+
+dclass DistributedPuppeteer : DistributedObject {
+  requestPuppet() p2p clsend;
+  requestExit() p2p clsend;
+  rejectPuppet() p2p;
+};
+
+dclass MagicWordManager : DistributedObject {
+  setMagicWord(string, uint32, uint32) p2p clsend;
+  setMagicWordResponse(string) p2p;
+  setWho(uint32array) p2p clsend;
+};
+
+dclass FriendManager : DistributedObject {
+  friendQuery(int32) p2p clsend;
+  cancelFriendQuery(int32) p2p clsend;
+  inviteeFriendConsidering(int8, int32) p2p clsend;
+  inviteeFriendResponse(int8, int32) p2p clsend;
+  inviteeAcknowledgeCancel(int32) p2p clsend;
+  friendConsidering(int8, int32) p2p;
+  friendResponse(int8, int32) p2p;
+  inviteeFriendQuery(int32, string, blob, int32) p2p;
+  inviteeCancelFriendQuery(int32) p2p;
+  requestSecret() p2p clsend;
+  requestSecretResponse(int8, string) p2p;
+  submitSecret(string) p2p clsend;
+  submitSecretResponse(int8, int32) p2p;
+};
+
